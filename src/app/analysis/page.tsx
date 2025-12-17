@@ -62,6 +62,8 @@ function AnalysisContent() {
   }
 
   const handleAction = async (action: 'approve' | 'reject', reason?: string) => {
+    if (!session) return
+    
     setActionLoading(action)
     
     try {
