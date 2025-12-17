@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn } from 'next-auth/react'
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false)
@@ -19,8 +19,10 @@ export default function SignIn() {
   const handleSignIn = async () => {
     setLoading(true)
     try {
-      // Em Auth.js v5, redirecionamos para o endpoint de signin
-      router.push('/api/auth/signin')
+      await signIn('discord', {
+        callbackUrl: '/dashboard',
+        redirect: true
+      })
     } catch (error) {
       console.error('Erro no login:', error)
       setLoading(false)
