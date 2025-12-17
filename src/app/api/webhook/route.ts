@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { DISCORD_SERVERS } from '@/config/discord'
 import { getLoginHistory } from '@/lib/database'
+import { text } from 'stream/consumers'
 
 interface WebhookData {
   action: 'approve' | 'reject'
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar estatísticas de logins e banimentos
-    const { totalLogins } = await getLoginHistory(userData.discordId)
+    const { totalLogins } = await getLoginHistory(userData.discordId) || { totalLogins: 0 }
     
     // Buscar banimentos
     let banimentosCount = 0
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          content: `Analisado por <@${analyst.id || 'Desconhecido'}>`,
           embeds: [embed]
         }),
       }

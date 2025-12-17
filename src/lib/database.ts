@@ -87,8 +87,7 @@ export async function getLoginHistory(discordId: string): Promise<{ loginsByDay:
       totalLogins: rows.length
     }
   } catch (error) {
-    console.error('Erro ao buscar histórico de logins:', error)
-    throw new Error('Falha ao buscar histórico de logins do banco de dados')
+    return { loginsByDay: [], totalLogins: 0 }
   }
 }
 
