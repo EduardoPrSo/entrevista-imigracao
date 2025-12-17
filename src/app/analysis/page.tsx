@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from 'react'
 import ThemeToggle from '@/components/ThemeToggle'
 import MessageList from '@/components/MessageList'
 import LoginHistoryDisplay from '@/components/LoginHistoryDisplay'
-import { DiscordMessage, DiscordChannel } from '@/types/discord'
+import { DiscordMessage } from '@/types/discord'
 import { LoginsByDay } from '@/lib/database'
 import { DISCORD_SERVERS, getDateXDaysAgo } from '@/config/discord'
 
@@ -59,20 +59,6 @@ function AnalysisContent() {
       ...prev,
       [field]: value
     }))
-  }
-
-  // Verificar se usuário está logado
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-300">Carregando...</div>
-      </div>
-    )
-  }
-
-  if (!session) {
-    router.push('/auth/signin')
-    return null
   }
 
   const handleAction = async (action: 'approve' | 'reject', reason?: string) => {
@@ -208,6 +194,7 @@ function AnalysisContent() {
       loadRedencaoMessages()
       loadBanimentosMessages()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData.discordId])
 
   // Verificar se todos os dados foram carregados
@@ -216,6 +203,20 @@ function AnalysisContent() {
       setAllDataLoaded(true)
     }
   }, [loginsLoading, redencaoLoading, banimentosLoading])
+
+  // Verificar se usuário está logado
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-600 dark:text-gray-300">Carregando...</div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    router.push('/auth/signin')
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 space-y-10">

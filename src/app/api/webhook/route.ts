@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { DISCORD_SERVERS } from '@/config/discord'
 import { getLoginHistory } from '@/lib/database'
-import { text } from 'stream/consumers'
 
 interface WebhookData {
   action: 'approve' | 'reject'
