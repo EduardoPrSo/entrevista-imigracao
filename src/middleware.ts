@@ -2,16 +2,16 @@ import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 
 export default auth((req) => {
-  const token = req.auth
+  const session = req.auth
 
   // Verificar se o usuário está autenticado
-  if (!token) {
+  if (!session) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
   // Verificar se o usuário tem permissão para acessar rotas protegidas
   if (req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname.startsWith('/analysis')) {
-    if (!token?.hasPermission) {
+    if (!session.user?.hasPermission) {
       return NextResponse.redirect(new URL('/auth/error?error=AccessDenied', req.url))
     }
   }

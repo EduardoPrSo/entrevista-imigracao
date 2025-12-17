@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { auth } from '@/auth'
 import { DISCORD_SERVERS } from '@/config/discord'
 import { getLoginHistory } from '@/lib/database'
 
@@ -25,7 +24,7 @@ interface WebhookData {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session || !session.user?.hasPermission) {
       return NextResponse.json(
