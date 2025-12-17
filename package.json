@@ -9,13 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@next-auth/prisma-adapter": "^1.0.7",
     "axios": "^1.12.2",
     "discord.js": "^14.22.1",
     "dotenv": "^17.2.3",
     "mysql2": "^3.15.3",
     "next": "^16.0.10",
-    "next-auth": "^4.24.11",
+    "next-auth": "^5.0.0-beta.25",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
