@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { getLoginHistory } from '@/lib/database'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getTotalLogins, getCreatedAt, getBansCount } from '@/lib/database'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -15,6 +16,8 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const discordId = searchParams.get('discordId')
+    const createdAtParam = searchParams.get('createdAt')
+    const bansParam = searchParams.get('bans')
 
     if (!discordId) {
       return NextResponse.json(
@@ -23,10 +26,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { loginsByDay, totalLogins } = await getLoginHistory(discordId)
+    if (createdAtParam === 'true') {
+      const daysSinceCreation = await getCreatedAt(discordId)
+      return NextResponse.json({ 
+        daysSinceCreation,
+        discordId
+      })
+    }
+
+    if (bansParam === 'true') {
+      const bansCount = await getBansCount(discordId)
+      return NextResponse.json({ 
+        bansCount,
+        discordId
+      })
+    }
+
+    const totalLogins = await getTotalLogins(discordId)
     
     return NextResponse.json({ 
-      loginsByDay,
       totalLogins,
       discordId
     })

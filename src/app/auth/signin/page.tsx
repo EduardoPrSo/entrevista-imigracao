@@ -1,25 +1,25 @@
 'use client'
 
+import { signIn, getSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession, signIn } from 'next-auth/react'
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const { data: session } = useSession()
 
   useEffect(() => {
-    // Verificar se já está logado
-    if (session?.user?.hasPermission) {
-      router.push('/dashboard')
-    }
-  }, [session, router])
+    getSession().then(session => {
+      if (session?.user?.hasPermission) {
+        router.push('/dashboard')
+      }
+    })
+  }, [router])
 
   const handleSignIn = async () => {
     setLoading(true)
     try {
-      await signIn('discord', {
+      await signIn('discord', { 
         callbackUrl: '/dashboard',
         redirect: true
       })

@@ -40,14 +40,14 @@ export default function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="p-2 w-9 h-9 rounded-md bg-gray-100 animate-pulse"></div>
+      <div className="p-2 w-9 h-9 rounded-md bg-muted dark:bg-card animate-pulse"></div>
     )
   }
 
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-md transition-colors bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
+      className="p-2 rounded-md transition-colors bg-muted hover:bg-muted/80 dark:bg-card dark:hover:bg-card/80 text-foreground dark:text-gray-300 border border-border dark:border-gray-600"
       title={`Mudar para tema ${isDark ? 'claro' : 'escuro'}`}
     >
       {isDark ? (

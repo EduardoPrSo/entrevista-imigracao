@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import discordService from '@/services/discordService'
 import { MessageFilter } from '@/types/discord'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     
     if (!session || !session.user) {
       return NextResponse.json(

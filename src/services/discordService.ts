@@ -106,14 +106,13 @@ class DiscordService {
       const maxMessages = params.limit || 1000
       
       if (params.channelId) {
-        // Calcular data limite se daysBack foi fornecido
         const cutoffDate = params.daysBack 
           ? new Date(Date.now() - params.daysBack * 24 * 60 * 60 * 1000)
           : null
         
         let lastMessageId: string | undefined
         let messagesFound = 0
-        const maxIterations = 50 // Aumentado para garantir que pegue todas as mensagens dentro do período
+        const maxIterations = 50
         let iteration = 0
 
         while (messagesFound < maxMessages && iteration < maxIterations) {
@@ -129,13 +128,11 @@ class DiscordService {
               break
             }
             
-            // Verificar se a mensagem mais antiga do lote está além do limite de dias
             if (cutoffDate) {
               const oldestMessage = batchMessages[batchMessages.length - 1]
               const oldestMessageDate = new Date(oldestMessage.timestamp)
               
               if (oldestMessageDate < cutoffDate) {
-                // Adicionar apenas as mensagens dentro do período
                 const recentMessages = batchMessages.filter(m => 
                   new Date(m.timestamp) >= cutoffDate
                 )
@@ -149,7 +146,6 @@ class DiscordService {
             lastMessageId = batchMessages[batchMessages.length - 1].id
             iteration++
             
-            // Aumentar delay para evitar rate limiting
             await new Promise(resolve => setTimeout(resolve, 1500))
             
           } catch (error) {
@@ -178,7 +174,6 @@ class DiscordService {
         }
       }
 
-      // Se daysBack foi usado, remover dateFrom do filtro pois já foi aplicado na busca
       const filterToApply = params.daysBack 
         ? { ...params.filter, dateFrom: undefined }
         : params.filter
@@ -299,7 +294,6 @@ class DiscordService {
     })
   }
 
-  // Testar se o token do bot está funcionando
   async testBotToken(): Promise<boolean> {
     try {
       const response = await axios.get(
@@ -319,7 +313,6 @@ class DiscordService {
     }
   }
 
-  // Verificar se o bot tem as permissões necessárias
   async validateBotPermissions(guildId: string): Promise<boolean> {
     try {
       const tokenValid = await this.testBotToken()

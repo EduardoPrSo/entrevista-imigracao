@@ -1,132 +1,151 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { DISCORD_SERVERS } from '@/config/discord'
-import { getLoginHistory } from '@/lib/database'
-
-interface WebhookData {
-  action: 'approve' | 'reject'
-  userData: {
-    characterName: string
-    serverId: string
-    realName: string
-    birthDate: string
-    discordId: string
-    serverSet: string
-    streamLink: string
-    loginTime: string
-  }
-  analyst: {
-    name: string | null | undefined
-    id: string | null | undefined
-  }
-  rejectReason?: string
-}
 
 export async function POST(request: NextRequest) {
+  console.log('🎯 Webhook POST recebido')
   try {
-    const session = await auth()
+    const contentType = request.headers.get('content-type')
+    console.log('📋 Content-Type:', contentType)
 
-    if (!session || !session.user?.hasPermission) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      )
-    }
-
-    const data: WebhookData = await request.json()
-    const { action, userData, analyst, rejectReason } = data
-
-    console.log('Webhook data received:', data)
-
-    const botToken = process.env.DISCORD_BOT_TOKEN
-    if (!botToken) {
-      console.error('Token do bot não configurado')
-      return NextResponse.json(
-        { error: 'Token do bot não configurado' },
-        { status: 500 }
-      )
-    }
-
-    // Buscar estatísticas de logins e banimentos
-    const { totalLogins } = await getLoginHistory(userData.discordId) || { totalLogins: 0 }
-    
-    // Buscar banimentos
-    let banimentosCount = 0
-    try {
-      const bansResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          guildId: DISCORD_SERVERS.BANS.guildId,
-          channelId: DISCORD_SERVERS.BANS.channelIds[0],
-          filter: {
-            content: userData.discordId,
-          },
-          limit: 5000,
-          daysBack: DISCORD_SERVERS.BANS.daysBack,
-        }),
+    // Processar envio de certificado com imagens
+    if (contentType?.includes('multipart/form-data')) {
+      console.log('📦 Processando FormData...')
+      const formData = await request.formData()
+      const certificate = formData.get('certificate') as File
+      const image1 = formData.get('image1') as File
+      const image2 = formData.get('image2') as File
+      const dataStr = formData.get('data') as string
+      console.log('📁 Arquivos recebidos:', {
+        certificate: certificate?.size,
+        image1: image1?.size,
+        image2: image2?.size,
+        data: dataStr?.substring(0, 100)
       })
-      
-      if (bansResponse.ok) {
-        const bansData = await bansResponse.json()
-        banimentosCount = bansData.messages?.length || 0
+      const data = JSON.parse(dataStr)
+
+      const webhookUrl = process.env.DISCORD_WEBHOOK_APROVADOS
+      console.log('🔑 Configurações:', {
+        hasWebhookUrl: !!webhookUrl,
+        webhookUrl: webhookUrl?.substring(0, 50) + '...'
+      })
+
+      if (!webhookUrl) {
+        console.log('❌ Configuração ausente')
+        return NextResponse.json(
+          { error: 'Configuração do Discord não encontrada' },
+          { status: 500 }
+        )
       }
-    } catch (error) {
-      console.error('Erro ao buscar banimentos:', error)
-    }
 
-    // Determinar canal
-    const channelId = action === 'approve' 
-      ? DISCORD_SERVERS.IMMIGRATION.approvalChannelId 
-      : DISCORD_SERVERS.IMMIGRATION.rejectionChannelId
-
-    // Criar embed
-    const embed = createDiscordEmbed(
-      action,
-      userData,
-      {
-        name: analyst.name,
-        id: analyst.id,
-        image: session.user?.image
-      },
-      totalLogins,
-      banimentosCount,
-      rejectReason
-    )
-
-    // Enviar mensagem para o Discord
-    const discordResponse = await fetch(
-      `https://discord.com/api/v10/channels/${channelId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bot ${botToken}`,
-          'Content-Type': 'application/json',
+      // Criar embed
+      console.log('📝 Criando embed...')
+      const userData = data.userData || {}
+      const embed = {
+        title: '📋 Novo Formulário de Imigração',
+        color: 0xFFB6C1, // Rosa pastel
+        fields: [
+          {
+            name: '👤 Usuário Discord',
+            value: `<@${data.discordId}> (${data.username})`,
+            inline: false
+          },
+          {
+            name: '🆔 ID do Discord',
+            value: data.discordId,
+            inline: false
+          },
+          {
+            name: '📄 Certificado Nº',
+            value: data.certificateNumber || 'N/A',
+            inline: false
+          },
+          {
+            name: '📅 Data de Emissão',
+            value: data.emissionDate || 'N/A',
+            inline: false
+          },
+          {
+            name: '🎮 Nome do Personagem',
+            value: userData.characterName || 'Não informado',
+            inline: false
+          },
+          {
+            name: '🌐 ID no Servidor',
+            value: userData.serverId || 'Não informado',
+            inline: false
+          },
+          {
+            name: '👨 Nome Real',
+            value: userData.realName || 'Não informado',
+            inline: false
+          },
+          {
+            name: '🎂 Data de Nascimento',
+            value: userData.birthDate ? new Date(userData.birthDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informado',
+            inline: false
+          },
+          {
+            name: '🖥️ Set de Servidor',
+            value: userData.serverSet || 'Não informado',
+            inline: false
+          },
+          {
+            name: '📺 Link de Stream',
+            value: userData.streamLink || 'Não informado',
+            inline: false
+          },
+          {
+            name: '⏰ Horário de Login',
+            value: userData.loginTime || 'Não informado',
+            inline: false
+          },
+          {
+            name: '📊 Estatísticas',
+            value: `🔐 Logins: **${data.totalLogins || 0}**\n⛔ Banimentos: **${data.totalBans || 0}**\n✨ Redenção: **${data.totalRedemptions > 0 ? 'Sim' : 'Não'}**`,
+            inline: false
+          }
+        ],
+        image: {
+          url: 'attachment://certificado.png'
         },
-        body: JSON.stringify({
-          content: `Analisado por <@${analyst.id || 'Desconhecido'}>`,
-          embeds: [embed]
-        }),
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: 'Sistema de Imigração - CPX.XP'
+        }
       }
-    )
 
-    if (!discordResponse.ok) {
-      const errorText = await discordResponse.text()
-      console.error('Erro ao enviar mensagem para o Discord:', errorText)
-      return NextResponse.json(
-        { error: 'Erro ao enviar mensagem para o Discord' },
-        { status: 500 }
-      )
+      // Enviar para Discord
+      console.log('🌐 Enviando para Discord webhook...')
+      const webhookFormData = new FormData()
+      webhookFormData.append('payload_json', JSON.stringify({
+        embeds: [embed]
+      }))
+      webhookFormData.append('file1', certificate, 'certificado.png')
+      webhookFormData.append('file2', image1, 'documento1.png')
+      webhookFormData.append('file3', image2, 'documento2.png')
+
+      const webhookResponse = await fetch(webhookUrl, {
+        method: 'POST',
+        body: webhookFormData
+      })
+      console.log('📡 Resposta do Discord:', webhookResponse.status, webhookResponse.statusText)
+
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text()
+        console.error('❌ Erro ao enviar webhook:', errorText)
+        return NextResponse.json(
+          { error: 'Erro ao enviar para Discord' },
+          { status: 500 }
+        )
+      }
+
+      console.log('✅ Webhook enviado com sucesso!')
+      return NextResponse.json({ success: true })
     }
 
-    console.log(`Mensagem de ${action === 'approve' ? 'aprovação' : 'rejeição'} enviada com sucesso`)
-
-    return NextResponse.json({
-      success: true,
-      message: `Notificação de ${action === 'approve' ? 'aprovação' : 'rejeição'} enviada`
-    })
+    return NextResponse.json(
+      { error: 'Tipo de conteúdo não suportado' },
+      { status: 400 }
+    )
 
   } catch (error) {
     console.error('Erro na API de webhook:', error)
@@ -137,96 +156,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
-  }
-}
-
-function createDiscordEmbed(
-  action: 'approve' | 'reject',
-  userData: WebhookData['userData'],
-  analyst: {
-    name: string | null | undefined
-    id: string | null | undefined
-    image: string | null | undefined
-  },
-  totalLogins: number,
-  banimentosCount: number,
-  rejectReason?: string
-) {
-  const isApproved = action === 'approve'
-  const color = isApproved ? 0x00ff00 : 0xff0000
-  const status = isApproved ? 'APROVADO' : 'REPROVADO'
-  const statusIcon = isApproved ? '✅' : '❌'
-
-  const fields = [
-    {
-      name: '👤 Nome do Personagem',
-      value: userData.characterName || 'Não informado',
-      inline: true
-    },
-    {
-      name: '🖥️ ID do Servidor',
-      value: userData.serverId || 'Não informado',
-      inline: true
-    },
-    {
-      name: '📛 Nome Real',
-      value: userData.realName || 'Não informado',
-      inline: true
-    },
-    {
-      name: '🎂 Data de Nascimento',
-      value: userData.birthDate ? new Date(userData.birthDate).toLocaleDateString('pt-BR') : 'Não informado',
-      inline: true
-    },
-    {
-      name: '🆔 ID Discord',
-      value: userData.discordId ? `<@${userData.discordId}>` : 'Não informado',
-      inline: true
-    },
-    {
-      name: '⚙️ Set no Servidor',
-      value: userData.serverSet || 'Não informado',
-      inline: true
-    },
-    {
-      name: '📺 Link da Stream',
-      value: userData.streamLink || 'Não informado',
-      inline: false
-    },
-    {
-      name: '⏰ Horário de Login',
-      value: userData.loginTime || 'Não informado',
-      inline: true
-    },
-    {
-      name: '📊 Logins nos últimos 30 dias',
-      value: totalLogins.toString(),
-      inline: true
-    },
-    {
-      name: '⛔ Banimentos nos últimos 45 dias',
-      value: banimentosCount.toString(),
-      inline: true
-    }
-  ]
-
-  if (!isApproved && rejectReason) {
-    fields.push({
-      name: '❌ Motivo da Reprovação',
-      value: rejectReason,
-      inline: false
-    })
-  }
-
-  return {
-    title: `${statusIcon} Candidato ${status}`,
-    description: `Análise do candidato **${userData.characterName}** foi ${isApproved ? 'aprovada' : 'reprovada'}`,
-    color: color,
-    fields: fields,
-    timestamp: new Date().toISOString(),
-    footer: {
-      text: `Analisado por: ${analyst.name || 'Desconhecido'}`,
-      icon_url: analyst.image || undefined
-    }
   }
 }
