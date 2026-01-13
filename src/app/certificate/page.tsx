@@ -267,7 +267,7 @@ function CertificateContent() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Image
-                src={`${process.env.NEXT_PUBLIC_BASE_URL}/logo.png`}
+                src="/logo.png"
                 alt="Logo"
                 width={150}
                 height={50}

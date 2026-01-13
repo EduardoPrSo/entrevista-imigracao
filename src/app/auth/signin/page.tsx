@@ -36,7 +36,7 @@ export default function SignIn() {
       <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md space-y-6">
         <div className="flex justify-center items-center flex-col">
           <Image 
-            src={`${process.env.NEXT_PUBLIC_BASE_URL}/logo.png`}
+            src="/logo.png"
             alt="Logo" 
             width={150}
             height={50}
