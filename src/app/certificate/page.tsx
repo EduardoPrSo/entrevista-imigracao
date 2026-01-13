@@ -35,6 +35,7 @@ function CertificateContent() {
     totalLogins?: number
     totalBans?: number
     totalRedemptions?: number
+    daysSinceCreation?: number
   } | null>(null)
 
   useEffect(() => {
