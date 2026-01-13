@@ -23,12 +23,13 @@ export default function Dashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const user = session?.user as { id?: string; discordId?: string; name?: string } | undefined
   const [userData, setUserData] = useState<UserData>({
     characterName: '',
     serverId: '',
     realName: '',
     birthDate: '',
-    discordId: session?.user?.id || '',
+    discordId: user?.discordId || user?.id || '',
     serverSet: '',
     streamLink: '',
     loginTime: ''
@@ -44,10 +45,11 @@ export default function Dashboard() {
 
   // Atualizar o Discord ID quando a sessão carregar
   useEffect(() => {
-    if (session?.user?.id) {
+    const sessionUser = session?.user as { id?: string; discordId?: string } | undefined
+    if (sessionUser?.discordId || sessionUser?.id) {
       setUserData(prev => ({
         ...prev,
-        discordId: session.user.id
+        discordId: sessionUser.discordId || sessionUser.id || ''
       }))
     }
   }, [session])
@@ -63,7 +65,8 @@ export default function Dashboard() {
     )
   }
 
-  if (!session || !session.user?.hasPermission) {
+  const sessionUser = session?.user as { hasPermission?: boolean } | undefined
+  if (!session || !sessionUser?.hasPermission) {
     router.push('/auth/signin')
     return null
   }
@@ -293,10 +296,10 @@ export default function Dashboard() {
 
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                {session.user.image ? (
+                {session.user?.image ? (
                   <Image
                     src={session.user.image}
-                    alt={session.user.name || 'User'}
+                    alt={session.user?.name || 'User'}
                     width={32}
                     height={32}
                     className="w-8 h-8 rounded-full"
@@ -306,11 +309,11 @@ export default function Dashboard() {
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                    {session.user.name?.charAt(0).toUpperCase() || 'U'}
+                    {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 )}
                 <span className="text-sm font-medium text-foreground">
-                  {session.user.name}
+                  {session.user?.name}
                 </span>
               </div>
 

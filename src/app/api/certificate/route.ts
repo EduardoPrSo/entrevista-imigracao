@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 // Armazenar tokens temporários em memória (em produção, use Redis ou DB)
+interface CertificateData {
+  color: string
+  date: string
+  number: string
+  by: string
+  userData?: {
+    characterName: string
+    serverId: string
+    realName: string
+    birthDate: string
+    discordId: string
+  }
+  totalLogins?: number
+  totalBans?: number
+  totalRedemptions?: number
+}
+
 const certificateTokens = new Map<string, {
-  data: any
+  data: CertificateData
   expiresAt: number
   used: boolean
 }>()

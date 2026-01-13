@@ -2,12 +2,12 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import Image from 'next/image'
 import ThemeToggle from '@/components/ThemeToggle'
 import MessageList from '@/components/MessageList'
 import LoginHistoryDisplay from '@/components/LoginHistoryDisplay'
-import { DiscordMessage, DiscordChannel } from '@/types/discord'
+import { DiscordMessage } from '@/types/discord'
 import { LoginsByDay } from '@/lib/database'
 import { DISCORD_SERVERS, getDateXDaysAgo } from '@/config/discord'
 
@@ -55,6 +55,14 @@ function AnalysisContent() {
   
   const [allDataLoaded, setAllDataLoaded] = useState(false)
 
+  // Verificar se usuário está logado antes de usar hooks
+  useEffect(() => {
+    if (status === 'loading') return
+    if (!session) {
+      router.push('/auth/signin')
+    }
+  }, [status, session, router])
+
   const handleInputChange = (field: keyof UserData, value: string) => {
     setUserData(prev => ({
       ...prev,
@@ -62,24 +70,13 @@ function AnalysisContent() {
     }))
   }
 
-  // Verificar se usuário está logado
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-300">Carregando...</div>
-      </div>
-    )
-  }
-
-  if (!session) {
-    router.push('/auth/signin')
-    return null
-  }
-
   const handleAction = async (action: 'approve' | 'reject', reason?: string) => {
+    if (!session) return
+    
     setActionLoading(action)
     
     try {
+      const user = session.user as { id?: string; name?: string; discordId?: string }
       const response = await fetch('/api/webhook', {
         method: 'POST',
         headers: {
@@ -89,8 +86,8 @@ function AnalysisContent() {
           action,
           userData,
           analyst: {
-            name: session.user?.name,
-            id: session.user?.id
+            name: user.name,
+            id: user.discordId || user.id
           },
           rejectReason: action === 'reject' ? reason : undefined
         }),
@@ -129,7 +126,7 @@ function AnalysisContent() {
     setRejectReason('')
   }
 
-  const searchDiscordMessages = async (serverConfig: typeof DISCORD_SERVERS.BANS | typeof DISCORD_SERVERS.REDEMPTION, searchTerm: string, setMessages: (msgs: DiscordMessage[]) => void, setLoading: (loading: boolean) => void) => {
+  const searchDiscordMessages = useCallback(async (serverConfig: typeof DISCORD_SERVERS.BANS | typeof DISCORD_SERVERS.REDEMPTION, searchTerm: string, setMessages: (msgs: DiscordMessage[]) => void, setLoading: (loading: boolean) => void) => {
     if (!userData.discordId) return
 
     setLoading(true)
@@ -173,17 +170,17 @@ function AnalysisContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userData.discordId])
 
-  const loadRedencaoMessages = async () => {
+  const loadRedencaoMessages = useCallback(async () => {
     await searchDiscordMessages(DISCORD_SERVERS.REDEMPTION, 'redencao', setRedencaoMessages, setRedencaoLoading)
-  }
+  }, [searchDiscordMessages])
 
-  const loadBanimentosMessages = async () => {
+  const loadBanimentosMessages = useCallback(async () => {
     await searchDiscordMessages(DISCORD_SERVERS.BANS, 'ban', setBanimentosMessages, setBanimentosLoading)
-  }
+  }, [searchDiscordMessages])
 
-  const loadLoginHistory = async () => {
+  const loadLoginHistory = useCallback(async () => {
     if (!userData.discordId) return
 
     setLoginsLoading(true)
@@ -200,16 +197,16 @@ function AnalysisContent() {
     } finally {
       setLoginsLoading(false)
     }
-  }
+  }, [userData.discordId])
 
   // Carregar todos os dados automaticamente ao montar o componente
   useEffect(() => {
-    if (userData.discordId) {
+    if (userData.discordId && status === 'authenticated') {
       loadLoginHistory()
       loadRedencaoMessages()
       loadBanimentosMessages()
     }
-  }, [userData.discordId])
+  }, [userData.discordId, status, loadLoginHistory, loadRedencaoMessages, loadBanimentosMessages])
 
   // Verificar se todos os dados foram carregados
   useEffect(() => {
@@ -217,6 +214,11 @@ function AnalysisContent() {
       setAllDataLoaded(true)
     }
   }, [loginsLoading, redencaoLoading, banimentosLoading])
+
+  // Se não estiver autenticado, não renderizar
+  if (!session) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 space-y-10">

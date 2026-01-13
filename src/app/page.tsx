@@ -14,12 +14,15 @@ export default function Home() {
     if (!session) {
       // Não logado, redirecionar para login
       router.push('/auth/signin')
-    } else if (session.user?.hasPermission) {
-      // Logado e com permissão, redirecionar para dashboard
-      router.push('/dashboard')
     } else {
-      // Logado mas sem permissão, redirecionar para erro
-      router.push('/auth/error?error=AccessDenied')
+      const user = session.user as { hasPermission?: boolean } | undefined
+      if (user?.hasPermission) {
+        // Logado e com permissão, redirecionar para dashboard
+        router.push('/dashboard')
+      } else {
+        // Logado mas sem permissão, redirecionar para erro
+        router.push('/auth/error?error=AccessDenied')
+      }
     }
   }, [session, status, router])
 

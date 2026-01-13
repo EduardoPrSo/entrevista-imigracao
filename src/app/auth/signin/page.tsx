@@ -3,6 +3,7 @@
 import { signIn, getSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false)
@@ -10,7 +11,8 @@ export default function SignIn() {
 
   useEffect(() => {
     getSession().then(session => {
-      if (session?.user?.hasPermission) {
+      const user = session?.user as { hasPermission?: boolean }
+      if (user?.hasPermission) {
         router.push('/dashboard')
       }
     })
@@ -33,11 +35,12 @@ export default function SignIn() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
       <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md space-y-6">
         <div className="flex justify-center items-center flex-col">
-          <img 
+          <Image 
             src={`${process.env.NEXT_PUBLIC_BASE_URL}/logo.png`}
             alt="Logo" 
-            className='mb-6 invert dark:invert-0'
             width={150}
+            height={50}
+            className='mb-6 invert dark:invert-0'
           />
           <p className="text-gray-600 dark:text-gray-300">
             Faça login com Discord para acessar o sistema

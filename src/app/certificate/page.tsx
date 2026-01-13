@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import Certificate from '@/components/Certificate'
 import ThemeToggle from '@/components/ThemeToggle'
 import html2canvas from 'html2canvas'
 
-export default function CertificatePage() {
+function CertificateContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -24,7 +25,13 @@ export default function CertificatePage() {
     date: string
     number: string
     by: string
-    userData?: any
+    userData?: {
+      characterName: string
+      serverId: string
+      realName: string
+      birthDate: string
+      discordId: string
+    }
     totalLogins?: number
     totalBans?: number
     totalRedemptions?: number
@@ -170,9 +177,10 @@ export default function CertificatePage() {
       formData.append('image1', image1Blob, 'documento1.png')
       formData.append('image2', image2Blob, 'documento2.png')
       
+      const user = session?.user as { id?: string; name?: string; discordId?: string }
       const dataToSend = {
-        discordId: session?.user?.id,
-        username: session?.user?.name,
+        discordId: user?.discordId || user?.id,
+        username: user?.name,
         certificateNumber: certificateData?.number,
         emissionDate: certificateData?.date,
         userData: certificateData?.userData,
@@ -214,6 +222,7 @@ export default function CertificatePage() {
     }
   }
 
+  /* Função removida - não está sendo utilizada
   const generateImage = async () => {
     if (!certificateRef.current) return
 
@@ -241,6 +250,7 @@ export default function CertificatePage() {
       console.error('Erro ao gerar imagem:', error)
     }
   }
+  */
 
   if (status === 'loading' || !certificateData) {
     return (
@@ -256,19 +266,22 @@ export default function CertificatePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img
+              <Image
                 src={`${process.env.NEXT_PUBLIC_BASE_URL}/logo.png`}
                 alt="Logo"
                 width={150}
+                height={50}
                 className='invert dark:invert-0'
               />
             </div>
 
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <img
+                <Image
                   src={session?.user?.image || ''}
                   alt={session?.user?.name || ''}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full"
                 />
                 <span className="text-sm font-medium text-foreground">
@@ -335,9 +348,11 @@ export default function CertificatePage() {
                 {/* Coluna 1 */}
                 <div className="flex flex-col space-y-4">
                   <div className="border-2 border-dashed border-border rounded-lg p-4">
-                    <img
+                    <Image
                       src="/ex1.png"
                       alt="Exemplo 1"
+                      width={400}
+                      height={300}
                       className="w-full h-auto rounded-lg mb-4"
                     />
                     <p className="text-sm text-muted-foreground text-center mb-4">
@@ -348,9 +363,11 @@ export default function CertificatePage() {
                   <div className="relative">
                     {uploadedImage1 ? (
                       <div className="relative">
-                        <img
+                        <Image
                           src={uploadedImage1}
                           alt="Documento 1"
+                          width={400}
+                          height={256}
                           className="w-full h-64 object-cover rounded-lg"
                         />
                         <button
@@ -385,9 +402,11 @@ export default function CertificatePage() {
                 {/* Coluna 2 */}
                 <div className="flex flex-col space-y-4">
                   <div className="border-2 border-dashed border-border rounded-lg p-4">
-                    <img
+                    <Image
                       src="/ex2.png"
                       alt="Exemplo 2"
+                      width={400}
+                      height={300}
                       className="w-full h-auto rounded-lg mb-4"
                     />
                     <p className="text-sm text-muted-foreground text-center mb-4">
@@ -398,9 +417,11 @@ export default function CertificatePage() {
                   <div className="relative">
                     {uploadedImage2 ? (
                       <div className="relative">
-                        <img
+                        <Image
                           src={uploadedImage2}
                           alt="Documento 2"
+                          width={400}
+                          height={256}
                           className="w-full h-64 object-cover rounded-lg"
                         />
                         <button
@@ -483,5 +504,13 @@ export default function CertificatePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function CertificatePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="text-muted-foreground">Carregando...</div></div>}>
+      <CertificateContent />
+    </Suspense>
   )
 }

@@ -1,12 +1,11 @@
-import NextAuth from 'next-auth'
+import NextAuth from 'next-auth/next'
 import DiscordProvider from 'next-auth/providers/discord'
-import { NextAuthOptions } from 'next-auth'
 import { checkAllowlist } from '@/lib/database'
 
 // Discord OAuth2 scopes necessários
 const scopes = ['identify'].join(' ')
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
@@ -19,7 +18,8 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, account }: { token: any; account: any }) {
       // Salvar access token do Discord no JWT
       if (account) {
         token.accessToken = account.access_token
@@ -29,7 +29,8 @@ export const authOptions: NextAuthOptions = {
       }
       return token
     },
-    async session({ session, token }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: { session: any; token: any }) {
       // Passar informações para a sessão do cliente
       if (session.user) {
         session.accessToken = token.accessToken as string
