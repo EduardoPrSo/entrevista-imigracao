@@ -186,7 +186,8 @@ function CertificateContent() {
         userData: certificateData?.userData,
         totalLogins: certificateData?.totalLogins,
         totalBans: certificateData?.totalBans,
-        totalRedemptions: certificateData?.totalRedemptions
+        totalRedemptions: certificateData?.totalRedemptions,
+        daysSinceCreation: certificateData?.daysSinceCreation
       }
       console.log('📋 Dados do formulário:', dataToSend)
       formData.append('data', JSON.stringify(dataToSend))

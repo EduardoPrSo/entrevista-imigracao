@@ -102,6 +102,13 @@ export async function POST(request: NextRequest) {
             name: '📊 Estatísticas',
             value: `🔐 Logins: **${data.totalLogins || 0}**\n⛔ Banimentos: **${data.totalBans || 0}**\n✨ Redenção: **${data.totalRedemptions > 0 ? 'Sim' : 'Não'}**`,
             inline: false
+          },
+          {
+            name: '📅 Dias desde a criação da conta',
+            value: data.daysSinceCreation !== undefined && data.daysSinceCreation !== null 
+              ? `**${data.daysSinceCreation}** dias ${data.daysSinceCreation < 30 ? '⚠️' : '✅'}`
+              : 'Não informado',
+            inline: false
           }
         ],
         image: {

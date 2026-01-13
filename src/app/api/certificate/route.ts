@@ -18,6 +18,7 @@ interface CertificateData {
   totalLogins?: number
   totalBans?: number
   totalRedemptions?: number
+  daysSinceCreation?: number
 }
 
 const certificateTokens = new Map<string, {
@@ -46,15 +47,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    const { color, date, number, by, userData, totalLogins, totalBans, totalRedemptions } = await request.json()
-    console.log('[Certificate API] POST - Dados recebidos:', { color, date, number, by, userData, totalLogins, totalBans, totalRedemptions })
+    const { color, date, number, by, userData, totalLogins, totalBans, totalRedemptions, daysSinceCreation } = await request.json()
+    console.log('[Certificate API] POST - Dados recebidos:', { color, date, number, by, userData, totalLogins, totalBans, totalRedemptions, daysSinceCreation })
 
     // Gerar token único
     const token = `${Date.now()}-${Math.random().toString(36).substring(7)}`
     
     // Armazenar dados com expiração de 5 minutos
     certificateTokens.set(token, {
-      data: { color, date, number, by, userData, totalLogins, totalBans, totalRedemptions },
+      data: { color, date, number, by, userData, totalLogins, totalBans, totalRedemptions, daysSinceCreation },
       expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutos
       used: false
     })

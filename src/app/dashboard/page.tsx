@@ -126,7 +126,8 @@ export default function Dashboard() {
     console.log('📊 Estatísticas:', {
       totalLogins,
       totalBans: bansCount,
-      totalRedemptions: redencaoMessages.length
+      totalRedemptions: redencaoMessages.length,
+      daysSinceCreation
     })
     
     try {
@@ -142,7 +143,8 @@ export default function Dashboard() {
           userData,
           totalLogins,
           totalBans: bansCount,
-          totalRedemptions: redencaoMessages.length
+          totalRedemptions: redencaoMessages.length,
+          daysSinceCreation
         })
       })
 
