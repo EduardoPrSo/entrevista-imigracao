@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
+import Image from 'next/image'
 import ThemeToggle from '@/components/ThemeToggle'
 import MessageList from '@/components/MessageList'
 import LoginHistoryDisplay from '@/components/LoginHistoryDisplay'
@@ -224,19 +225,22 @@ function AnalysisContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img 
+              <Image 
                 src={`${process.env.NEXT_PUBLIC_BASE_URL}/logo.png`}
                 alt="Logo" 
                 width={150}
+                height={50}
                 className='invert dark:invert-0'
               />
             </div>
 
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <img
+                <Image
                   src={session.user?.image || ''}
                   alt={session.user?.name || ''}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">

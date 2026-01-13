@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 interface CertificateProps {
     isFullscreen: boolean
     certificateColor: string
@@ -40,9 +42,11 @@ export default function Certificate({
                     <div className="flex-1 flex flex-col justify-center">
                         <div className="text-center mb-6 w-full flex flex-col items-center gap-2">
                             <div className="flex justify-center mb-8">
-                                <img
+                                <Image
                                     src="/logo.png"
                                     alt="CFX.XP Logo"
+                                    width={isFullscreen ? 384 : 192}
+                                    height={isFullscreen ? 128 : 64}
                                     className={`${isFullscreen ? 'w-64 md:w-96' : 'w-32 md:w-48'} object-contain`}
                                 />
                             </div>

@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import ThemeToggle from '@/components/ThemeToggle'
 import { DiscordMessage } from '@/types/discord'
 import { DISCORD_SERVERS, getDateXDaysAgo } from '@/config/discord'
@@ -281,10 +282,11 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img 
+              <Image 
                 src={`${process.env.NEXT_PUBLIC_BASE_URL}/logo.png`}
                 alt="Logo" 
                 width={150}
+                height={50}
                 className='invert dark:invert-0'
               />
             </div>
@@ -292,9 +294,11 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
                 {session.user.image ? (
-                  <img
+                  <Image
                     src={session.user.image}
                     alt={session.user.name || 'User'}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full"
                     onError={(e) => {
                       e.currentTarget.src = 'https://cdn.discordapp.com/embed/avatars/0.png'

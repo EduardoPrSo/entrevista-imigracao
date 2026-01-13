@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { DiscordMessage } from '@/types/discord'
 
 interface MessageListProps {
@@ -32,12 +33,14 @@ export default function MessageList({ messages, loading }: MessageListProps) {
           className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-start gap-3">
-            <img
+            <Image
               src={message.author.avatar 
                 ? `https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png`
                 : 'https://cdn.discordapp.com/embed/avatars/0.png'
               }
               alt={message.author.username}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full"
             />
             <div className="flex-1">
@@ -67,9 +70,11 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                       {embed.author && (
                         <div className="flex items-center gap-2 mb-2">
                           {embed.author.icon_url && (
-                            <img
+                            <Image
                               src={embed.author.icon_url}
                               alt={embed.author.name}
+                              width={24}
+                              height={24}
                               className="w-6 h-6 rounded-full"
                             />
                           )}
@@ -107,17 +112,21 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                       )}
 
                       {embed.image && (
-                        <img
+                        <Image
                           src={embed.image.url}
                           alt="Embed image"
+                          width={500}
+                          height={300}
                           className="mt-2 rounded max-w-full"
                         />
                       )}
 
                       {embed.thumbnail && (
-                        <img
+                        <Image
                           src={embed.thumbnail.url}
                           alt="Embed thumbnail"
+                          width={80}
+                          height={80}
                           className="mt-2 rounded w-20 h-20 float-right"
                         />
                       )}
@@ -125,9 +134,11 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                       {embed.footer && (
                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
                           {embed.footer.icon_url && (
-                            <img
+                            <Image
                               src={embed.footer.icon_url}
                               alt="Footer icon"
+                              width={16}
+                              height={16}
                               className="w-4 h-4 rounded-full"
                             />
                           )}
@@ -147,9 +158,11 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                   {message.attachments.map((attachment) => (
                     <div key={attachment.id}>
                       {attachment.content_type?.startsWith('image/') ? (
-                        <img
+                        <Image
                           src={attachment.url}
                           alt={attachment.filename}
+                          width={500}
+                          height={300}
                           className="rounded max-w-full"
                         />
                       ) : (
