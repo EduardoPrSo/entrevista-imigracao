@@ -194,3 +194,88 @@ export async function checkAllowlist(discordId: string): Promise<boolean> {
     return false
   }
 }
+
+// Immigration Formulary Admin Functions
+export interface ImmigrationFormularySettings {
+  status: number // 0 = desativado, 1 = ativado
+  admins: string[] // Array de Discord IDs
+}
+
+export async function getImmigrationFormularySettings(): Promise<ImmigrationFormularySettings | null> {
+  try {
+    const connection = getDbConnection()
+
+    const [rows] = await connection.query<mysql.RowDataPacket[]>(
+      'SELECT status, admins FROM immigration_formulary LIMIT 1'
+    )
+
+    if (!rows[0]) {
+      console.log('Nenhuma configuração encontrada para immigration_formulary')
+      return null
+    }
+
+    let admins: string[] = []
+    if (rows[0].admins) {
+      try {
+        admins = JSON.parse(rows[0].admins)
+      } catch (error) {
+        console.error('Erro ao parsear admins:', error)
+        admins = []
+      }
+    }
+
+    return {
+      status: rows[0].status,
+      admins: admins
+    }
+  } catch (error) {
+    console.error('Erro ao buscar configurações do immigration_formulary:', error)
+    return null
+  }
+}
+
+export async function updateImmigrationFormularyStatus(status: number): Promise<boolean> {
+  try {
+    const connection = getDbConnection()
+
+    await connection.query(
+      'UPDATE immigration_formulary SET status = ? LIMIT 1',
+      [status]
+    )
+
+    return true
+  } catch (error) {
+    console.error('Erro ao atualizar status do immigration_formulary:', error)
+    return false
+  }
+}
+
+export async function isUserAdmin(discordId: string): Promise<boolean> {
+  try {
+    const settings = await getImmigrationFormularySettings()
+    
+    if (!settings) {
+      return false
+    }
+
+    return settings.admins.includes(discordId)
+  } catch (error) {
+    console.error('Erro ao verificar se usuário é admin:', error)
+    return false
+  }
+}
+
+export async function isFormularyActive(): Promise<boolean> {
+  try {
+    const settings = await getImmigrationFormularySettings()
+    
+    if (!settings) {
+      return true // Se não houver configuração, considerar ativo por padrão
+    }
+
+    return settings.status === 1
+  } catch (error) {
+    console.error('Erro ao verificar se formulário está ativo:', error)
+    return true // Em caso de erro, considerar ativo por padrão
+  }
+}

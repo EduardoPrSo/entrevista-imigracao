@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
 import { DiscordMessage } from '@/types/discord'
 import { DISCORD_SERVERS, getDateXDaysAgo } from '@/config/discord'
@@ -42,8 +43,51 @@ export default function Dashboard() {
   
   const [allDataLoaded, setAllDataLoaded] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [isFormularyActive, setIsFormularyActive] = useState(true)
+  const [checkingFormularyStatus, setCheckingFormularyStatus] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [hasAllowlist, setHasAllowlist] = useState(true)
+  const [checkingAllowlist, setCheckingAllowlist] = useState(true)
 
-  // Verificar allowlist e deslogar se necessário
+  // Verificar se o formulário está ativo
+  useEffect(() => {
+    const checkFormularyStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/formulary-status')
+        if (response.ok) {
+          const data = await response.json()
+          setIsFormularyActive(data.status === 1)
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status do formulário:', error)
+        setIsFormularyActive(true) // Em caso de erro, considerar ativo
+      } finally {
+        setCheckingFormularyStatus(false)
+      }
+    }
+
+    checkFormularyStatus()
+  }, [])
+
+  // Verificar se usuário é admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!session) return
+      
+      try {
+        const response = await fetch('/api/admin/check')
+        const data = await response.json()
+        setIsAdmin(data.isAdmin || false)
+      } catch (error) {
+        console.error('Erro ao verificar admin:', error)
+        setIsAdmin(false)
+      }
+    }
+
+    checkAdmin()
+  }, [session])
+
+  // Verificar allowlist
   useEffect(() => {
     const checkPermission = async () => {
       if (session?.user) {
@@ -60,11 +104,12 @@ export default function Dashboard() {
             
             const data = await response.json()
             
-            if (!data.allowed) {
-              await signOut({ callbackUrl: '/auth/signin' })
-            }
+            setHasAllowlist(data.allowed)
           } catch (error) {
             console.error('Erro ao verificar permissão:', error)
+            setHasAllowlist(false)
+          } finally {
+            setCheckingAllowlist(false)
           }
         }
       }
@@ -84,6 +129,10 @@ export default function Dashboard() {
     }
   }, [session])
 
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/auth/signin' })
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -99,6 +148,229 @@ export default function Dashboard() {
   if (!session || !sessionUser?.hasPermission) {
     router.push('/auth/signin')
     return null
+  }
+
+  // Verificando allowlist
+  if (checkingAllowlist) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Sem allowlist
+  if (!hasAllowlist) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-card shadow-sm border-b border-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <Image 
+                  src="/logo.png"
+                  alt="Logo" 
+                  width={150}
+                  height={50}
+                  className='invert dark:invert-0'
+                />
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
+                  {session.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user?.name || 'User'}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                      {session.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-foreground">
+                    {session.user?.name}
+                  </span>
+                </div>
+
+                <ThemeToggle />
+
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 dark:bg-card dark:hover:bg-card/80 dark:text-gray-300 px-3 py-2 rounded-md transition-colors border border-border dark:border-gray-600"
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-center px-4 py-20">
+          <div className="max-w-2xl w-full bg-card border border-border rounded-lg shadow-lg p-8 text-center">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Allowlist Necessária</h1>
+            </div>
+            
+            <p className="text-lg text-muted-foreground mb-6">
+              Para preencher o formulário você precisa ter allowlist no Complexo XP.
+            </p>
+            
+            <p className="text-muted-foreground mb-6">
+              Entre no Discord para mais informações:
+            </p>
+
+            <a 
+              href="https://discord.gg/MmVSGBpyJk" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-md transition-colors font-medium mb-8"
+            >
+              Acessar Discord
+            </a>
+            
+            <div className="pt-8 border-t border-border">
+              <button
+                onClick={handleSignOut}
+                className="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors border border-border"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Verificando status do formulário
+  if (checkingFormularyStatus) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verificando disponibilidade...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Formulário desativado
+  if (!isFormularyActive) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-card shadow-sm border-b border-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <Image 
+                  src="/logo.png"
+                  alt="Logo" 
+                  width={150}
+                  height={50}
+                  className='invert dark:invert-0'
+                />
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
+                  {session.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user?.name || 'User'}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                      {session.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-foreground">
+                    {session.user?.name}
+                  </span>
+                </div>
+
+                {isAdmin && (
+                  <Link 
+                    href="/admin" 
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity font-medium text-sm"
+                  >
+                    Admin
+                  </Link>
+                )}
+
+                <ThemeToggle />
+
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 dark:bg-card dark:hover:bg-card/80 dark:text-gray-300 px-3 py-2 rounded-md transition-colors border border-border dark:border-gray-600"
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-center px-4 py-20">
+          <div className="max-w-2xl w-full bg-card border border-border rounded-lg shadow-lg p-8 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Formulário Temporariamente Desativado</h1>
+          </div>
+          
+          <p className="text-lg text-muted-foreground mb-6">
+            O envio de formulários está desativado no momento.
+          </p>
+          
+          <p className="text-muted-foreground mb-6">
+            Aguarde novas informações da equipe de imigração no Discord do Complexo XP:
+          </p>
+
+          <a 
+            href="https://discord.gg/MmVSGBpyJk" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-md transition-colors font-medium mb-8"
+          >
+            Acessar Discord
+          </a>
+          
+          <div className="pt-8 border-t border-border">
+            <button
+              onClick={handleSignOut}
+              className="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors border border-border"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+        </div>
+      </div>
+    )
   }
 
   const handleInputChange = (field: keyof UserData, value: string) => {
@@ -307,10 +579,6 @@ export default function Dashboard() {
     setLoading(false)
   }
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/auth/signin' })
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card shadow-sm border-b border-border">
@@ -348,6 +616,15 @@ export default function Dashboard() {
                   {session.user?.name}
                 </span>
               </div>
+
+              {isAdmin && (
+                <Link 
+                  href="/admin" 
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity font-medium text-sm"
+                >
+                  Admin
+                </Link>
+              )}
 
               <ThemeToggle />
 
