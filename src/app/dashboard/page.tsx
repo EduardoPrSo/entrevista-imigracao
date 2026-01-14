@@ -380,7 +380,7 @@ export default function Dashboard() {
                     value={userData.serverId}
                     onChange={(e) => handleInputChange('serverId', e.target.value)}
                     className="w-full px-4 py-3 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder-muted-foreground text-foreground bg-input"
-                    placeholder="Digite o ID do servidor onde você joga"
+                    placeholder="Digite o ID do seu personagem"
                     required
                   />
                 </div>
