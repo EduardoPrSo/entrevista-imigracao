@@ -55,6 +55,36 @@ function AnalysisContent() {
   
   const [allDataLoaded, setAllDataLoaded] = useState(false)
 
+  // Verificar allowlist e deslogar se necessário
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (session?.user) {
+        const sessionUser = session.user as { id?: string; discordId?: string }
+        const discordId = sessionUser.discordId || sessionUser.id
+        
+        if (discordId) {
+          try {
+            const response = await fetch('/api/check-allowlist', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ discordId })
+            })
+            
+            const data = await response.json()
+            
+            if (!data.allowed) {
+              await signOut({ callbackUrl: '/auth/signin' })
+            }
+          } catch (error) {
+            console.error('Erro ao verificar permissão:', error)
+          }
+        }
+      }
+    }
+    
+    checkPermission()
+  }, [session])
+
   // Verificar se usuário está logado antes de usar hooks
   useEffect(() => {
     if (status === 'loading') return
