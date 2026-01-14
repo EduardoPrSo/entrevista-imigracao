@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Entrevista Imigração",
+  title: "Formulário Imigração",
   description: "Sistema de análise de candidatos para imigração",
 };
 
