@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useEffect } from 'react'
 
 interface CertificateProps {
     isFullscreen: boolean
@@ -19,12 +20,37 @@ export default function Certificate({
     emittedBy,
     onToggleFullscreen
 }: CertificateProps) {
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                onToggleFullscreen()
+            }
+        }
+
+        document.addEventListener('keydown', handleEscape)
+        return () => document.removeEventListener('keydown', handleEscape)
+    }, [isFullscreen, onToggleFullscreen])
+
     return (
         <div
             className={`${isFullscreen ? 'fixed inset-0 z-[9999] w-screen h-screen overflow-hidden' : 'relative'}`}
             onClick={isFullscreen ? onToggleFullscreen : undefined}
             style={isFullscreen ? { cursor: 'pointer' } : undefined}
         >
+            {isFullscreen && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleFullscreen()
+                    }}
+                    className="fixed top-4 right-4 z-[10000] bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    aria-label="Fechar fullscreen"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            )}
             <div
                 className={`relative ${isFullscreen ? 'w-full h-full' : 'w-[1280px] h-[720px]'} overflow-hidden`}
             >
