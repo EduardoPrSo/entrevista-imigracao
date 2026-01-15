@@ -242,15 +242,6 @@ export default function Dashboard() {
             >
               Acessar Discord
             </a>
-            
-            <div className="pt-8 border-t border-border">
-              <button
-                onClick={handleSignOut}
-                className="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors border border-border"
-              >
-                Sair
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -358,15 +349,6 @@ export default function Dashboard() {
           >
             Acessar Discord
           </a>
-          
-          <div className="pt-8 border-t border-border">
-            <button
-              onClick={handleSignOut}
-              className="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors border border-border"
-            >
-              Sair
-            </button>
-          </div>
         </div>
         </div>
       </div>
@@ -590,7 +572,7 @@ export default function Dashboard() {
                 alt="Logo" 
                 width={150}
                 height={50}
-                className='invert dark:invert-0'
+                className='[filter:brightness(0)_saturate(100%)_invert(13%)_sepia(72%)_saturate(4844%)_hue-rotate(324deg)_brightness(88%)_contrast(101%)] dark:filter-none'
               />
             </div>
 
