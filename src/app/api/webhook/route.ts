@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { incrementSendersCount } from '@/lib/database'
+import { incrementSendersCount, getImmigrationFormularySettings } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   console.log('🎯 Webhook POST recebido')
@@ -10,6 +10,19 @@ export async function POST(request: NextRequest) {
     // Processar envio de certificado com imagens
     if (contentType?.includes('multipart/form-data')) {
       console.log('📦 Processando FormData...')
+      // Verificar limite antes de aceitar o envio
+      try {
+        const settings = await getImmigrationFormularySettings()
+        if (settings && settings.limit > 0 && settings.senders_count >= settings.limit) {
+          console.log('🚫 Limite atingido, bloqueando envio')
+          return NextResponse.json(
+            { error: 'Formulário atingiu o limite de envios' },
+            { status: 429 }
+          )
+        }
+      } catch (err) {
+        console.warn('Falha ao verificar limite no servidor, prosseguindo...', err)
+      }
       const formData = await request.formData()
       const certificate = formData.get('certificate') as File
       const image1 = formData.get('image1') as File

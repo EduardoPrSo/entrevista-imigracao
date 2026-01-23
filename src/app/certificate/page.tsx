@@ -39,7 +39,7 @@ function CertificateContent() {
   } | null>(null)
   const [limitReached, setLimitReached] = useState(false)
   const [formularyLimit, setFormularyLimit] = useState(0)
-  const [sendersCound, setSendersCount] = useState(0)
+  const [sendersCount, setSendersCount] = useState(0)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -66,8 +66,8 @@ function CertificateContent() {
         .then(response => {
           setCertificateData(response.data)
           
-          // Buscar limite e contagem de envios
-          fetch('/api/admin/formulary-status')
+          // Buscar limite e contagem de envios (endpoint público)
+          fetch('/api/formulary-status')
             .then(res => res.json())
             .then(data => {
               setFormularyLimit(data.limit || 0)
@@ -145,6 +145,20 @@ function CertificateContent() {
       console.log('❌ Validação falhou:', { uploadedImage1: !!uploadedImage1, uploadedImage2: !!uploadedImage2, ref: !!hiddenCertificateRef.current })
       alert('Por favor, envie ambas as imagens.')
       return
+    }
+
+    // Verificar limite atual antes de enviar
+    try {
+      const statusRes = await fetch('/api/formulary-status')
+      if (statusRes.ok) {
+        const statusData = await statusRes.json()
+        if (statusData.limit > 0 && statusData.senders_count >= statusData.limit) {
+          alert('Desculpe, o formulário atingiu o limite máximo de envios. Por favor, contacte um administrador.')
+          return
+        }
+      }
+    } catch (e) {
+      console.warn('Falha ao verificar limite antes do envio, prosseguindo...', e)
     }
 
     setIsSubmitting(true)
