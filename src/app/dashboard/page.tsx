@@ -996,17 +996,16 @@ export default function Dashboard() {
               {redencaoMessages.length > 0 || daysSinceCreation < 30 ? (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
                   <p className="text-red-800 dark:text-red-200 font-medium">
-                    ⚠️ Não é possível prosseguir: 
-                    {bansCount > 0 && ` Existem ${bansCount} banimento(s) nos últimos 45 dias.`}
+                    ⚠️ Não é possível prosseguir:
                     {redencaoMessages.length > 0 && ' Usuário está em período de redenção.'}
                     {daysSinceCreation < 30 && ` A conta precisa ter no mínimo 30 dias. Faltam ${30 - daysSinceCreation} dias.`}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground mb-6">
-                    Todas as verificações foram concluídas com sucesso. Você pode prosseguir para a próxima etapa.
                   </p>
-                )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground mb-6">
+                  Todas as verificações foram concluídas com sucesso. Você pode prosseguir para a próxima etapa.
+                </p>
+              )}
                 
                 <button
                   onClick={handleNextStep}
