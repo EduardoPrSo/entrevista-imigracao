@@ -993,12 +993,10 @@ export default function Dashboard() {
             <div className="bg-card rounded-lg shadow-sm border border-border p-6">
               <h2 className="text-xl font-semibold mb-4 text-foreground">Próxima Etapa</h2>
               
-              {redencaoMessages.length > 0 || daysSinceCreation < 30 ? (
+              {daysSinceCreation < 30 ? (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
                   <p className="text-red-800 dark:text-red-200 font-medium">
-                    ⚠️ Não é possível prosseguir:
-                    {redencaoMessages.length > 0 && ' Usuário está em período de redenção.'}
-                    {daysSinceCreation < 30 && ` A conta precisa ter no mínimo 30 dias. Faltam ${30 - daysSinceCreation} dias.`}
+                    ⚠️ Não é possível prosseguir: A conta precisa ter no mínimo 30 dias. Faltam {30 - daysSinceCreation} dias.
                   </p>
                 </div>
               ) : (
@@ -1009,7 +1007,7 @@ export default function Dashboard() {
                 
                 <button
                   onClick={handleNextStep}
-                  disabled={!allDataLoaded || redencaoMessages.length > 0 || daysSinceCreation < 30}
+                  disabled={!allDataLoaded || daysSinceCreation < 30}
                   className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {!allDataLoaded ? 'Carregando dados...' : 'Próxima Etapa'}
