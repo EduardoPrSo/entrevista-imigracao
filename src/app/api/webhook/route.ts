@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { incrementSendersCount } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   console.log('🎯 Webhook POST recebido')
@@ -143,6 +144,15 @@ export async function POST(request: NextRequest) {
           { error: 'Erro ao enviar para Discord' },
           { status: 500 }
         )
+      }
+
+      // ✅ Incrementar senders_count após webhook bem-sucedido
+      console.log('🔢 Incrementando senders_count...')
+      const incrementSuccess = await incrementSendersCount()
+      if (incrementSuccess) {
+        console.log('✅ senders_count incrementado com sucesso')
+      } else {
+        console.error('⚠️ Erro ao incrementar senders_count')
       }
 
       console.log('✅ Webhook enviado com sucesso!')

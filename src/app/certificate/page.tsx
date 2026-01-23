@@ -37,6 +37,9 @@ function CertificateContent() {
     totalRedemptions?: number
     daysSinceCreation?: number
   } | null>(null)
+  const [limitReached, setLimitReached] = useState(false)
+  const [formularyLimit, setFormularyLimit] = useState(0)
+  const [sendersCound, setSendersCount] = useState(0)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -62,6 +65,20 @@ function CertificateContent() {
         })
         .then(response => {
           setCertificateData(response.data)
+          
+          // Buscar limite e contagem de envios
+          fetch('/api/admin/formulary-status')
+            .then(res => res.json())
+            .then(data => {
+              setFormularyLimit(data.limit || 0)
+              setSendersCount(data.senders_count || 0)
+              
+              // Verificar se limite foi atingido (limit > 0 e senders_count >= limit)
+              if (data.limit > 0 && data.senders_count >= data.limit) {
+                setLimitReached(true)
+              }
+            })
+            .catch(error => console.error('Erro ao buscar limite:', error))
         })
         .catch(error => {
           console.error('Erro ao validar certificado:', error)
@@ -258,6 +275,86 @@ function CertificateContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-muted-foreground">Carregando...</div>
+      </div>
+    )
+  }
+
+  // Verificar se formulário atingiu o limite
+  if (limitReached) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-card shadow-sm border-b border-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <Image
+                  src="/logo.png"
+                  alt="Logo"
+                  width={150}
+                  height={50}
+                  className='[filter:brightness(0)_saturate(100%)_invert(13%)_sepia(72%)_saturate(4844%)_hue-rotate(324deg)_brightness(88%)_contrast(101%)] dark:filter-none'
+                />
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
+                  {session?.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user?.name || 'User'}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://cdn.discordapp.com/embed/avatars/0.png'
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                      {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-foreground">
+                    {session?.user?.name}
+                  </span>
+                </div>
+
+                <ThemeToggle />
+
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 dark:bg-card dark:hover:bg-card/80 dark:text-gray-300 px-3 py-2 rounded-md transition-colors border border-border dark:border-gray-600"
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={handleBack}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Voltar ao Dashboard
+            </button>
+
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-8 text-center">
+              <div className="text-4xl mb-4">❌</div>
+              <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">
+                Formulário Indisponível
+              </h1>
+              <p className="text-lg text-red-600 dark:text-red-400 mb-6">
+                Desculpe, o formulário atingiu o limite máximo de envios. Aguarde a abertura do próximo período.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

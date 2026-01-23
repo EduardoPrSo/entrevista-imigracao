@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../auth/[...nextauth]/route'
-import { isUserAdmin, getImmigrationFormularySettings, updateImmigrationFormularyStatus } from '@/lib/database'
+import { isUserAdmin, getImmigrationFormularySettings, updateImmigrationFormularyStatus, updateImmigrationFormularyLimit } from '@/lib/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Configurações não encontradas' }, { status: 404 })
     }
 
-    return NextResponse.json({ status: settings.status })
+    return NextResponse.json({ 
+      status: settings.status,
+      limit: settings.limit,
+      senders_count: settings.senders_count
+    })
   } catch (error) {
     console.error('Erro ao buscar status do formulário:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
@@ -57,19 +61,40 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { status } = body
+    const { status, limit } = body
 
-    if (status !== 0 && status !== 1) {
-      return NextResponse.json({ error: 'Status inválido. Use 0 ou 1' }, { status: 400 })
+    if (status !== undefined && status !== null) {
+      if (status !== 0 && status !== 1) {
+        return NextResponse.json({ error: 'Status inválido. Use 0 ou 1' }, { status: 400 })
+      }
+
+      const success = await updateImmigrationFormularyStatus(status)
+
+      if (!success) {
+        return NextResponse.json({ error: 'Erro ao atualizar status' }, { status: 500 })
+      }
     }
 
-    const success = await updateImmigrationFormularyStatus(status)
+    if (limit !== undefined && limit !== null) {
+      if (typeof limit !== 'number' || limit < 0) {
+        return NextResponse.json({ error: 'Limit inválido. Deve ser um número >= 0' }, { status: 400 })
+      }
 
-    if (!success) {
-      return NextResponse.json({ error: 'Erro ao atualizar status' }, { status: 500 })
+      const success = await updateImmigrationFormularyLimit(limit)
+
+      if (!success) {
+        return NextResponse.json({ error: 'Erro ao atualizar limit' }, { status: 500 })
+      }
     }
 
-    return NextResponse.json({ success: true, status })
+    const settings = await getImmigrationFormularySettings()
+
+    return NextResponse.json({ 
+      success: true, 
+      status: settings?.status,
+      limit: settings?.limit,
+      senders_count: settings?.senders_count
+    })
   } catch (error) {
     console.error('Erro ao atualizar status do formulário:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })

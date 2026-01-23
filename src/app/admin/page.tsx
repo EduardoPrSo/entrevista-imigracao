@@ -13,7 +13,11 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [formularyStatus, setFormularyStatus] = useState(1) // 1 = ativo, 0 = desativado
+  const [formularyLimit, setFormularyLimit] = useState(0) // 0 = infinito
+  const [sendersCount, setSendersCount] = useState(0)
   const [updating, setUpdating] = useState(false)
+  const [limitInput, setLimitInput] = useState('0')
+  const [resetLoading, setResetLoading] = useState(false)
 
   useEffect(() => {
     const checkAdminAndLoadStatus = async () => {
@@ -41,6 +45,9 @@ export default function AdminPage() {
         if (statusResponse.ok) {
           const statusData = await statusResponse.json()
           setFormularyStatus(statusData.status)
+          setFormularyLimit(statusData.limit || 0)
+          setSendersCount(statusData.senders_count || 0)
+          setLimitInput(String(statusData.limit || 0))
         }
       } catch (error) {
         console.error('Erro ao verificar admin:', error)
@@ -78,6 +85,63 @@ export default function AdminPage() {
       alert('Erro ao atualizar status do formulário')
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const handleUpdateLimit = async () => {
+    setUpdating(true)
+    try {
+      const newLimit = parseInt(limitInput, 10)
+      
+      if (isNaN(newLimit) || newLimit < 0) {
+        alert('Por favor, insira um número válido (>= 0)')
+        setUpdating(false)
+        return
+      }
+
+      const response = await fetch('/api/admin/formulary-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: newLimit })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setFormularyLimit(data.limit)
+        alert('Limite atualizado com sucesso!')
+      } else {
+        alert('Erro ao atualizar limite')
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar limite:', error)
+      alert('Erro ao atualizar limite')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleResetSendersCount = async () => {
+    if (!confirm('Tem certeza que deseja resetar a contagem de envios para 0?')) {
+      return
+    }
+
+    setResetLoading(true)
+    try {
+      const response = await fetch('/api/admin/reset-senders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.ok) {
+        setSendersCount(0)
+      } else {
+        alert('Erro ao resetar contagem de envios')
+      }
+    } catch (error) {
+      console.error('Erro ao resetar:', error)
+      alert('Erro ao resetar contagem de envios')
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -162,7 +226,8 @@ export default function AdminPage() {
           </div>
           <h1 className="text-3xl font-bold mb-8 text-foreground">Painel Administrativo</h1>
           
-          <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
+          {/* Status do Formulário */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-lg mb-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold mb-2 text-foreground">Status do Formulário de Imigração</h2>
@@ -198,7 +263,71 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-6 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+          {/* Limite de Envios */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-lg mb-6">
+            <h2 className="text-xl font-semibold mb-4 text-foreground">Limite de Envios</h2>
+            <p className="text-muted-foreground mb-4">
+              {formularyLimit === 0 
+                ? 'Limite infinito (0 = sem limite)' 
+                : `Limite atual: ${formularyLimit} envios`}
+            </p>
+
+            <div className="flex gap-4 mb-4">
+              <input
+                type="number"
+                min="0"
+                value={limitInput}
+                onChange={(e) => setLimitInput(e.target.value)}
+                placeholder="Digite o novo limite (0 = infinito)"
+                className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                onClick={handleUpdateLimit}
+                disabled={updating}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {updating ? 'Atualizando...' : 'Atualizar Limite'}
+              </button>
+            </div>
+
+            <div className="p-4 bg-muted rounded-md">
+              <p className="text-sm text-muted-foreground">
+                <strong>💡 Dica:</strong> Use 0 para permitir envios infinitos, ou um número maior que 0 para limitar.
+              </p>
+            </div>
+          </div>
+
+          {/* Contagem de Envios */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-lg mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold mb-2 text-foreground">Contagem de Envios</h2>
+                <p className="text-3xl font-bold text-primary">{sendersCount}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Formulários enviados
+                  {formularyLimit > 0 && ` (${Math.round((sendersCount / formularyLimit) * 100)}% do limite)`}
+                </p>
+              </div>
+              <button
+                onClick={handleResetSendersCount}
+                disabled={resetLoading}
+                className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {resetLoading ? 'Resetando...' : 'Resetar Contagem'}
+              </button>
+            </div>
+
+            {formularyLimit > 0 && (
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min((sendersCount / formularyLimit) * 100, 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
             <p className="text-sm text-yellow-600 dark:text-yellow-400">
               <strong>⚠️ Atenção:</strong> Quando o formulário estiver desativado, os usuários verão uma mensagem 
               informando que o envio de formulários está temporariamente suspenso.

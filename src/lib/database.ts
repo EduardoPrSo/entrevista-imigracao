@@ -199,6 +199,8 @@ export async function checkAllowlist(discordId: string): Promise<boolean> {
 export interface ImmigrationFormularySettings {
   status: number // 0 = desativado, 1 = ativado
   admins: string[] // Array de Discord IDs
+  limit: number // 0 = infinito, > 0 = limite de envios
+  senders_count: number // Quantidade de formulários enviados
 }
 
 export async function getImmigrationFormularySettings(): Promise<ImmigrationFormularySettings | null> {
@@ -206,7 +208,7 @@ export async function getImmigrationFormularySettings(): Promise<ImmigrationForm
     const connection = getDbConnection()
 
     const [rows] = await connection.query<mysql.RowDataPacket[]>(
-      'SELECT status, admins FROM immigration_formulary LIMIT 1'
+      'SELECT status, admins, `limit`, senders_count FROM immigration_formulary LIMIT 1'
     )
 
     if (!rows[0]) {
@@ -226,7 +228,9 @@ export async function getImmigrationFormularySettings(): Promise<ImmigrationForm
 
     return {
       status: rows[0].status,
-      admins: admins
+      admins: admins,
+      limit: rows[0].limit || 0,
+      senders_count: rows[0].senders_count || 0
     }
   } catch (error) {
     console.error('Erro ao buscar configurações do immigration_formulary:', error)
@@ -277,5 +281,51 @@ export async function isFormularyActive(): Promise<boolean> {
   } catch (error) {
     console.error('Erro ao verificar se formulário está ativo:', error)
     return true // Em caso de erro, considerar ativo por padrão
+  }
+}
+
+export async function updateImmigrationFormularyLimit(limit: number): Promise<boolean> {
+  try {
+    const connection = getDbConnection()
+
+    await connection.query(
+      'UPDATE immigration_formulary SET `limit` = ? LIMIT 1',
+      [limit]
+    )
+
+    return true
+  } catch (error) {
+    console.error('Erro ao atualizar limit do immigration_formulary:', error)
+    return false
+  }
+}
+
+export async function incrementSendersCount(): Promise<boolean> {
+  try {
+    const connection = getDbConnection()
+
+    await connection.query(
+      'UPDATE immigration_formulary SET senders_count = senders_count + 1 LIMIT 1'
+    )
+
+    return true
+  } catch (error) {
+    console.error('Erro ao incrementar senders_count:', error)
+    return false
+  }
+}
+
+export async function resetSendersCount(): Promise<boolean> {
+  try {
+    const connection = getDbConnection()
+
+    await connection.query(
+      'UPDATE immigration_formulary SET senders_count = 0 LIMIT 1'
+    )
+
+    return true
+  } catch (error) {
+    console.error('Erro ao resetar senders_count:', error)
+    return false
   }
 }
