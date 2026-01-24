@@ -531,7 +531,29 @@ function CertificateContent() {
               <h2 className="text-xl font-bold mb-1 text-foreground text-center">
                 Documentos de Verificação
               </h2>
-              <p className='text-sm mb-6 text-muted-foreground text-center'>O documento precisa ser oficial e legível para garantir a validade da verificação e após análise será excluído permanentemente pela nossa equipe.</p>
+              <p className='text-sm mb-4 text-muted-foreground text-center'>O documento precisa ser oficial e legível para garantir a validade da verificação e após análise será excluído permanentemente pela nossa equipe.</p>
+              
+              {/* Aviso Importante */}
+              <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-500 dark:border-red-600 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-red-900 dark:text-red-100 font-bold text-base mb-3 uppercase">⚠️ LEIA COM ATENÇÃO ⚠️</p>
+                    <p className="text-red-800 dark:text-red-200 font-semibold text-sm leading-relaxed mb-2">
+                      O <span className="text-red-600 dark:text-red-300 font-extrabold text-base uppercase bg-red-200 dark:bg-red-800/50 px-1.5 py-0.5 rounded">certificado</span> precisa aparecer <span className="text-red-600 dark:text-red-300 font-extrabold text-base uppercase bg-red-200 dark:bg-red-800/50 px-1.5 py-0.5 rounded">no fundo</span> das duas fotos!
+                    </p>
+                    <p className="text-red-800 dark:text-red-200 font-semibold text-sm leading-relaxed mb-2">
+                      O <span className="text-red-600 dark:text-red-300 font-extrabold text-base uppercase bg-red-200 dark:bg-red-800/50 px-1.5 py-0.5 rounded">documento</span> precisa estar <span className="text-red-600 dark:text-red-300 font-extrabold text-base uppercase bg-red-200 dark:bg-red-800/50 px-1.5 py-0.5 rounded">100% legível</span> - conseguimos ler todos os dados!
+                    </p>
+                    <p className="text-red-900 dark:text-red-100 font-bold text-sm mt-3">
+                      ❌ Se o certificado não estiver no fundo OU se o documento não estiver legível = RECUSADO INSTANTANEAMENTE!
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Coluna 1 */}
                 <div className="flex flex-col space-y-4">
