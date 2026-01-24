@@ -118,6 +118,14 @@ function CertificateContent() {
   const handleImageUpload = (imageNumber: 1 | 2, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      // Validar tamanho do arquivo (máximo 5 MB para upload)
+      const maxSize = 5 * 1024 * 1024 // 5 MB
+      if (file.size > maxSize) {
+        alert(`A imagem é muito grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Por favor, use uma imagem menor que 5 MB.`)
+        event.target.value = '' // Limpar input
+        return
+      }
+      
       const reader = new FileReader()
       reader.onloadend = () => {
         if (imageNumber === 1) {
@@ -185,8 +193,8 @@ function CertificateContent() {
       console.log('✅ Certificado blob criado:', certificateBlob.size, 'bytes')
 
       console.log('🔄 Convertendo imagens base64 para blob...')
-      // Converter base64 para blob
-      const base64ToBlob = (base64: string) => {
+      // Converter base64 para blob e comprimir se necessário
+      const base64ToBlob = async (base64: string, maxSizeMB: number = 2): Promise<Blob> => {
         const parts = base64.split(';base64,')
         const contentType = parts[0].split(':')[1]
         const raw = window.atob(parts[1])
@@ -195,12 +203,79 @@ function CertificateContent() {
         for (let i = 0; i < rawLength; ++i) {
           uInt8Array[i] = raw.charCodeAt(i)
         }
-        return new Blob([uInt8Array], { type: contentType })
+        const blob = new Blob([uInt8Array], { type: contentType })
+        
+        // Se o blob já estiver abaixo do limite, retornar
+        if (blob.size <= maxSizeMB * 1024 * 1024) {
+          console.log('✅ Imagem já está dentro do limite:', (blob.size / 1024 / 1024).toFixed(2), 'MB')
+          return blob
+        }
+        
+        console.log('⚠️ Imagem muito grande:', (blob.size / 1024 / 1024).toFixed(2), 'MB - Comprimindo...')
+        
+        // Comprimir imagem
+        return new Promise((resolve) => {
+          const img = document.createElement('img')
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            let width = img.width
+            let height = img.height
+            
+            // Reduzir dimensões se necessário (máximo 1920px na maior dimensão)
+            const maxDimension = 1920
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = (height * maxDimension) / width
+                width = maxDimension
+              } else {
+                width = (width * maxDimension) / height
+                height = maxDimension
+              }
+            }
+            
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx?.drawImage(img, 0, 0, width, height)
+            
+            // Tentar diferentes qualidades até encontrar uma que fique abaixo do limite
+            let quality = 0.9
+            const tryCompress = () => {
+              canvas.toBlob(
+                (compressedBlob) => {
+                  if (compressedBlob) {
+                    if (compressedBlob.size <= maxSizeMB * 1024 * 1024 || quality <= 0.5) {
+                      console.log('✅ Imagem comprimida:', (compressedBlob.size / 1024 / 1024).toFixed(2), 'MB com qualidade', quality)
+                      resolve(compressedBlob)
+                    } else {
+                      quality -= 0.1
+                      tryCompress()
+                    }
+                  }
+                },
+                'image/jpeg', // Usar JPEG para melhor compressão
+                quality
+              )
+            }
+            tryCompress()
+          }
+          img.src = base64
+        })
       }
 
-      const image1Blob = base64ToBlob(uploadedImage1)
-      const image2Blob = base64ToBlob(uploadedImage2)
-      console.log('✅ Imagens convertidas:', image1Blob.size, 'bytes e', image2Blob.size, 'bytes')
+      const image1Blob = await base64ToBlob(uploadedImage1, 2)
+      const image2Blob = await base64ToBlob(uploadedImage2, 2)
+      
+      // Validar tamanho total
+      const totalSize = certificateBlob.size + image1Blob.size + image2Blob.size
+      console.log('📊 Tamanho total do payload:', (totalSize / 1024 / 1024).toFixed(2), 'MB')
+      
+      if (totalSize > 8 * 1024 * 1024) { // 8 MB
+        alert('As imagens são muito grandes. Por favor, use imagens menores (máximo 2 MB cada).')
+        return
+      }
+      
+      console.log('✅ Imagens processadas - Img1:', (image1Blob.size / 1024 / 1024).toFixed(2), 'MB, Img2:', (image2Blob.size / 1024 / 1024).toFixed(2), 'MB')
 
       // Preparar FormData
       console.log('📦 Preparando FormData...')
@@ -499,7 +574,7 @@ function CertificateContent() {
                           <p className="mb-2 text-sm text-muted-foreground">
                             <span className="font-semibold">Clique para fazer upload</span>
                           </p>
-                          <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 10MB)</p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 5MB)</p>
                         </div>
                         <input
                           type="file"
@@ -553,7 +628,7 @@ function CertificateContent() {
                           <p className="mb-2 text-sm text-muted-foreground">
                             <span className="font-semibold">Clique para fazer upload</span>
                           </p>
-                          <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 10MB)</p>
+                          <p className="text-xs text-muted-foreground">PNG, JPG (MAX. 5MB)</p>
                         </div>
                         <input
                           type="file"
