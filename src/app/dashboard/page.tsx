@@ -51,6 +51,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [hasAllowlist, setHasAllowlist] = useState(true)
   const [checkingAllowlist, setCheckingAllowlist] = useState(true)
+  const [recentSubmission, setRecentSubmission] = useState<Date | null>(null)
 
   // Verificar se o formulário está ativo
   useEffect(() => {
@@ -132,10 +133,18 @@ export default function Dashboard() {
   useEffect(() => {
     const sessionUser = session?.user as { id?: string; discordId?: string } | undefined
     if (sessionUser?.discordId || sessionUser?.id) {
+      const discordId = sessionUser.discordId || sessionUser.id || ''
       setUserData(prev => ({
         ...prev,
-        discordId: sessionUser.discordId || sessionUser.id || ''
+        discordId
       }))
+      
+      // Verificar se já enviou recentemente
+      const submissionKey = `form_submission_${discordId}`
+      const lastSubmission = localStorage.getItem(submissionKey)
+      if (lastSubmission) {
+        setRecentSubmission(new Date(lastSubmission))
+      }
     }
   }, [session])
 
@@ -491,6 +500,22 @@ export default function Dashboard() {
   }
 
   const handleNextStep = async () => {
+    // Verificar se já enviou recentemente (localStorage)
+    const submissionKey = `form_submission_${userData.discordId}`
+    const lastSubmission = localStorage.getItem(submissionKey)
+    
+    if (lastSubmission) {
+      const submissionTime = new Date(lastSubmission)
+      const now = new Date()
+      const hoursSinceSubmission = (now.getTime() - submissionTime.getTime()) / (1000 * 60 * 60)
+      
+      // Bloquear envios em menos de 1 hora
+      if (hoursSinceSubmission < 1) {
+        alert(`⚠️ Você já enviou o formulário recentemente. Aguarde um pouco antes de enviar novamente.`)
+        return
+      }
+    }
+    
     // Gerar dados do certificado
     const now = new Date()
     const date = now.toLocaleDateString('pt-BR')
@@ -526,6 +551,10 @@ export default function Dashboard() {
 
       if (response.ok) {
         const { token } = await response.json()
+        
+        // Salvar timestamp do envio no localStorage
+        localStorage.setItem(submissionKey, now.toISOString())
+        
         // Redirecionar com token
         router.push(`/certificate?t=${token}`)
       } else {
@@ -1091,11 +1120,28 @@ export default function Dashboard() {
                     ⚠️ Não é possível prosseguir: A conta precisa ter no mínimo 30 dias. Faltam {30 - daysSinceCreation} dias.
                   </p>
                 </div>
-              ) : (
-                <p className="text-muted-foreground mb-6">
-                  Todas as verificações foram concluídas com sucesso. Você pode prosseguir para a próxima etapa.
-                </p>
-              )}
+              ) : recentSubmission && (() => {
+                const now = new Date()
+                const hoursSinceSubmission = (now.getTime() - recentSubmission.getTime()) / (1000 * 60 * 60)
+                
+                if (hoursSinceSubmission < 1) {
+                  return (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+                      <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+                        ⏱️ Você já enviou o formulário recentemente. Aguarde um pouco antes de enviar novamente.
+                      </p>
+                      <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-2">
+                        Último envio: {recentSubmission.toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                  )
+                }
+                return (
+                  <p className="text-muted-foreground mb-6">
+                    Todas as verificações foram concluídas com sucesso. Você pode prosseguir para a próxima etapa.
+                  </p>
+                )
+              })()}
                 
                 <button
                   onClick={handleNextStep}
