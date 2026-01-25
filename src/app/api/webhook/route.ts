@@ -28,12 +28,30 @@ export async function POST(request: NextRequest) {
       const image1 = formData.get('image1') as File
       const image2 = formData.get('image2') as File
       const dataStr = formData.get('data') as string
+      
       console.log('📁 Arquivos recebidos:', {
-        certificate: certificate?.size,
-        image1: image1?.size,
-        image2: image2?.size,
-        data: dataStr?.substring(0, 100)
+        certificate: certificate ? `${certificate.name} (${(certificate.size / 1024 / 1024).toFixed(2)} MB)` : 'Ausente',
+        image1: image1 ? `${image1.name} (${(image1.size / 1024 / 1024).toFixed(2)} MB)` : 'Ausente',
+        image2: image2 ? `${image2.name} (${(image2.size / 1024 / 1024).toFixed(2)} MB)` : 'Ausente',
+        totalSize: certificate && image1 && image2 
+          ? `${((certificate.size + image1.size + image2.size) / 1024 / 1024).toFixed(2)} MB` 
+          : 'N/A'
       })
+      
+      // Validar que todos os arquivos foram recebidos
+      if (!certificate || !image1 || !image2 || !dataStr) {
+        console.error('❌ Arquivos ausentes:', {
+          certificate: !!certificate,
+          image1: !!image1,
+          image2: !!image2,
+          data: !!dataStr
+        })
+        return NextResponse.json(
+          { error: 'Arquivos ausentes ou inválidos' },
+          { status: 400 }
+        )
+      }
+      
       const data = JSON.parse(dataStr)
 
       const webhookUrl = process.env.DISCORD_WEBHOOK_APROVADOS
@@ -152,10 +170,23 @@ export async function POST(request: NextRequest) {
 
       if (!webhookResponse.ok) {
         const errorText = await webhookResponse.text()
-        console.error('❌ Erro ao enviar webhook:', errorText)
+        console.error('❌ Erro ao enviar webhook:', {
+          status: webhookResponse.status,
+          statusText: webhookResponse.statusText,
+          error: errorText
+        })
+        
+        // Retornar erro mais específico
+        let errorMessage = 'Erro ao enviar para Discord'
+        if (webhookResponse.status === 413) {
+          errorMessage = 'Arquivos muito grandes para o Discord (limite ~8MB)'
+        } else if (webhookResponse.status === 400) {
+          errorMessage = 'Formato de arquivo inválido'
+        }
+        
         return NextResponse.json(
-          { error: 'Erro ao enviar para Discord' },
-          { status: 500 }
+          { error: errorMessage, details: errorText },
+          { status: webhookResponse.status }
         )
       }
 

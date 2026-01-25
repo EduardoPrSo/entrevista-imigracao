@@ -118,21 +118,26 @@ function CertificateContent() {
   const handleImageUpload = (imageNumber: 1 | 2, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Validar tamanho do arquivo (máximo 5 MB para upload)
-      const maxSize = 5 * 1024 * 1024 // 5 MB
+      // Validar tamanho do arquivo (máximo 4 MB para ter margem após conversão base64)
+      const maxSize = 4 * 1024 * 1024 // 4 MB
       if (file.size > maxSize) {
-        alert(`A imagem é muito grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Por favor, use uma imagem menor que 5 MB.`)
+        alert(`⚠️ A imagem é muito grande (${(file.size / 1024 / 1024).toFixed(2)} MB).\n\nPor favor, use uma imagem de até 4 MB.\n\nDica: Tire a foto diretamente pelo celular ou use um app de compressão.`)
         event.target.value = '' // Limpar input
         return
       }
       
       const reader = new FileReader()
       reader.onloadend = () => {
+        const base64 = reader.result as string
+        
         if (imageNumber === 1) {
-          setUploadedImage1(reader.result as string)
+          setUploadedImage1(base64)
         } else {
-          setUploadedImage2(reader.result as string)
+          setUploadedImage2(base64)
         }
+      }
+      reader.onerror = () => {
+        alert('Erro ao carregar a imagem. Tente novamente.')
       }
       reader.readAsDataURL(file)
     }
@@ -147,10 +152,7 @@ function CertificateContent() {
   }
 
   const handleSubmit = async () => {
-    console.log('🚀 handleSubmit iniciado')
-    
     if (!uploadedImage1 || !uploadedImage2 || !hiddenCertificateRef.current) {
-      console.log('❌ Validação falhou:', { uploadedImage1: !!uploadedImage1, uploadedImage2: !!uploadedImage2, ref: !!hiddenCertificateRef.current })
       alert('Por favor, envie ambas as imagens.')
       return
     }
@@ -166,33 +168,27 @@ function CertificateContent() {
         }
       }
     } catch (e) {
-      console.warn('Falha ao verificar limite antes do envio, prosseguindo...', e)
+      // Continuar mesmo se houver erro na verificação
     }
 
     setIsSubmitting(true)
-    console.log('✅ Validação passou, iniciando processamento...')
 
     try {
-      console.log('📸 Gerando imagem do certificado...')
-      // Gerar imagem do certificado
+      // Gerar imagem do certificado com scale reduzido
       const canvas = await html2canvas(hiddenCertificateRef.current, {
-        scale: 2,
-        backgroundColor: null,
+        scale: 1, // Reduzido de 2 para 1 para diminuir o tamanho
+        backgroundColor: '#ffffff',
         logging: false,
-        useCORS: true
+        useCORS: true,
+        allowTaint: true
       })
-      console.log('✅ Canvas gerado:', canvas.width, 'x', canvas.height)
 
-      console.log('🔄 Convertendo certificado para blob...')
-      // Converter certificado para blob
+      // Converter certificado para blob com JPEG (melhor compressão)
       const certificateBlob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob)
-        }, 'image/png')
+        }, 'image/jpeg', 0.85) // JPEG com 85% de qualidade em vez de PNG
       })
-      console.log('✅ Certificado blob criado:', certificateBlob.size, 'bytes')
-
-      console.log('🔄 Convertendo imagens base64 para blob...')
       // Converter base64 para blob e comprimir se necessário
       const base64ToBlob = async (base64: string, maxSizeMB: number = 2): Promise<Blob> => {
         const parts = base64.split(';base64,')
@@ -207,11 +203,8 @@ function CertificateContent() {
         
         // Se o blob já estiver abaixo do limite, retornar
         if (blob.size <= maxSizeMB * 1024 * 1024) {
-          console.log('✅ Imagem já está dentro do limite:', (blob.size / 1024 / 1024).toFixed(2), 'MB')
           return blob
         }
-        
-        console.log('⚠️ Imagem muito grande:', (blob.size / 1024 / 1024).toFixed(2), 'MB - Comprimindo...')
         
         // Comprimir imagem
         return new Promise((resolve) => {
@@ -245,7 +238,6 @@ function CertificateContent() {
                 (compressedBlob) => {
                   if (compressedBlob) {
                     if (compressedBlob.size <= maxSizeMB * 1024 * 1024 || quality <= 0.5) {
-                      console.log('✅ Imagem comprimida:', (compressedBlob.size / 1024 / 1024).toFixed(2), 'MB com qualidade', quality)
                       resolve(compressedBlob)
                     } else {
                       quality -= 0.1
@@ -268,21 +260,18 @@ function CertificateContent() {
       
       // Validar tamanho total
       const totalSize = certificateBlob.size + image1Blob.size + image2Blob.size
-      console.log('📊 Tamanho total do payload:', (totalSize / 1024 / 1024).toFixed(2), 'MB')
       
-      if (totalSize > 8 * 1024 * 1024) { // 8 MB
-        alert('As imagens são muito grandes. Por favor, use imagens menores (máximo 2 MB cada).')
+      // Discord tem limite de ~8MB, mas vamos usar 7MB para segurança
+      if (totalSize > 7 * 1024 * 1024) { // 7 MB
+        alert(`⚠️ As imagens são muito grandes!\n\nTamanho atual: ${(totalSize / 1024 / 1024).toFixed(2)} MB\nLimite: 7 MB\n\nPor favor, tire fotos menores ou comprima as imagens.`)
         return
       }
-      
-      console.log('✅ Imagens processadas - Img1:', (image1Blob.size / 1024 / 1024).toFixed(2), 'MB, Img2:', (image2Blob.size / 1024 / 1024).toFixed(2), 'MB')
 
       // Preparar FormData
-      console.log('📦 Preparando FormData...')
       const formData = new FormData()
-      formData.append('certificate', certificateBlob, 'certificado.png')
-      formData.append('image1', image1Blob, 'documento1.png')
-      formData.append('image2', image2Blob, 'documento2.png')
+      formData.append('certificate', certificateBlob, 'certificado.jpg') // Mudado de .png para .jpg
+      formData.append('image1', image1Blob, 'documento1.jpg')
+      formData.append('image2', image2Blob, 'documento2.jpg')
       
       const user = session?.user as { id?: string; name?: string; discordId?: string }
       const dataToSend = {
@@ -296,37 +285,49 @@ function CertificateContent() {
         totalRedemptions: certificateData?.totalRedemptions,
         daysSinceCreation: certificateData?.daysSinceCreation
       }
-      console.log('📋 Dados do formulário:', dataToSend)
       formData.append('data', JSON.stringify(dataToSend))
 
-      console.log('🌐 Enviando para /api/webhook...')
       const response = await fetch('/api/webhook', {
         method: 'POST',
         body: formData
       })
-      console.log('📡 Resposta recebida:', response.status, response.statusText)
 
       if (response.ok) {
-        console.log('✅ Formulário enviado com sucesso!')
-        alert('Formulário enviado com sucesso! Aguarde a análise da equipe.')
+        // Salvar timestamp do envio real no localStorage
+        const discordId = (session?.user as { discordId?: string; id?: string })?.discordId || (session?.user as { id?: string })?.id
+        if (discordId) {
+          const submissionKey = `form_submission_${discordId}`
+          localStorage.setItem(submissionKey, new Date().toISOString())
+        }
+        
+        alert('✅ Formulário enviado com sucesso!\n\nAguarde a análise da equipe de imigração.')
         router.push('/dashboard')
       } else {
-        console.log('❌ Erro na resposta:', response.status)
         const errorText = await response.text()
-        console.log('❌ Corpo do erro:', errorText)
-        try {
-          const error = JSON.parse(errorText)
-          alert(`Erro ao enviar formulário: ${error.error || 'Tente novamente'}`)
-        } catch {
-          alert(`Erro ao enviar formulário: ${errorText || 'Tente novamente'}`)
+        
+        let errorMessage = 'Erro desconhecido. Tente novamente.'
+        
+        if (response.status === 413) {
+          errorMessage = '⚠️ Arquivo muito grande!\n\nAs imagens excederam o limite permitido.\nTire fotos menores ou comprima as imagens.'
+        } else if (response.status === 429) {
+          errorMessage = '⚠️ Limite atingido!\n\nO formulário atingiu o máximo de envios.'
+        } else if (response.status === 500) {
+          errorMessage = '⚠️ Erro no servidor!\n\nTente novamente em alguns instantes.'
+        } else {
+          try {
+            const error = JSON.parse(errorText)
+            errorMessage = error.error || error.details || errorMessage
+          } catch {
+            errorMessage = errorText || errorMessage
+          }
         }
+        
+        alert(`❌ ${errorMessage}`)
       }
     } catch (error) {
-      console.error('💥 Erro crítico ao enviar formulário:', error)
       alert('Erro ao enviar formulário. Tente novamente.')
     } finally {
       setIsSubmitting(false)
-      console.log('🏁 handleSubmit finalizado')
     }
   }
 

@@ -500,22 +500,6 @@ export default function Dashboard() {
   }
 
   const handleNextStep = async () => {
-    // Verificar se já enviou recentemente (localStorage)
-    const submissionKey = `form_submission_${userData.discordId}`
-    const lastSubmission = localStorage.getItem(submissionKey)
-    
-    if (lastSubmission) {
-      const submissionTime = new Date(lastSubmission)
-      const now = new Date()
-      const hoursSinceSubmission = (now.getTime() - submissionTime.getTime()) / (1000 * 60 * 60)
-      
-      // Bloquear envios em menos de 1 hora
-      if (hoursSinceSubmission < 1) {
-        alert(`⚠️ Você já enviou o formulário recentemente. Aguarde um pouco antes de enviar novamente.`)
-        return
-      }
-    }
-    
     // Gerar dados do certificado
     const now = new Date()
     const date = now.toLocaleDateString('pt-BR')
@@ -552,10 +536,7 @@ export default function Dashboard() {
       if (response.ok) {
         const { token } = await response.json()
         
-        // Salvar timestamp do envio no localStorage
-        localStorage.setItem(submissionKey, now.toISOString())
-        
-        // Redirecionar com token
+        // Redirecionar com token (timestamp será salvo após envio real)
         router.push(`/certificate?t=${token}`)
       } else {
         alert('Erro ao gerar certificado. Tente novamente.')
@@ -1124,6 +1105,8 @@ export default function Dashboard() {
                 const now = new Date()
                 const hoursSinceSubmission = (now.getTime() - recentSubmission.getTime()) / (1000 * 60 * 60)
                 
+                // Comentado temporariamente - remover verificação de 1 hora
+                /*
                 if (hoursSinceSubmission < 1) {
                   return (
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
@@ -1136,6 +1119,7 @@ export default function Dashboard() {
                     </div>
                   )
                 }
+                */
                 return (
                   <p className="text-muted-foreground mb-6">
                     Todas as verificações foram concluídas com sucesso. Você pode prosseguir para a próxima etapa.
