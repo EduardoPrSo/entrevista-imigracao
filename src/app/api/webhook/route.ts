@@ -71,78 +71,31 @@ export async function POST(request: NextRequest) {
       // Criar embed
       console.log('📝 Criando embed...')
       const userData = data.userData || {}
+      const birthDate = userData.birthDate
+        ? new Date(userData.birthDate + 'T00:00:00').toLocaleDateString('pt-BR')
+        : 'Não informado'
+      const daysSinceCreation = data.daysSinceCreation !== undefined && data.daysSinceCreation !== null
+        ? `${data.daysSinceCreation} dias ${data.daysSinceCreation < 30 ? '⚠️' : '✅'}`
+        : 'Não informado'
+      const embedDescription = [
+        `🆔 ID do Discord: ${data.discordId}`,
+        `🎮 Nome do Personagem: ${userData.characterName || 'Não informado'}`,
+        `🌐 ID no Servidor: ${userData.serverId || 'Não informado'}`,
+        `👨 Nome Real: ${userData.realName || 'Não informado'}`,
+        `🎂 Data de Nascimento: ${birthDate}`,
+        `🖥️ Set de Servidor: ${userData.serverSet || 'Não informado'}`,
+        `📺 Link de Stream: ${userData.streamLink || 'Não informado'}`,
+        `⏰ Horário de Login: ${userData.loginTime || 'Não informado'}`,
+        `👤 Usuário Discord: <@${data.discordId}> (${data.username})`,
+        `📄 Certificado Nº: ${data.certificateNumber || 'N/A'}`,
+        `📅 Data de Emissão: ${data.emissionDate || 'N/A'}`,
+        `📊 Estatísticas: Logins: ${data.totalLogins || 0} | Banimentos: ${data.totalBans || 0} | Redenção: ${data.totalRedemptions > 0 ? 'Sim' : 'Não'}`,
+        `📅 Dias desde a criação da conta: ${daysSinceCreation}`
+      ].join('\n')
       const embed = {
         title: '📋 Novo Formulário de Imigração',
         color: 0xFFB6C1, // Rosa pastel
-        fields: [
-          {
-            name: '👤 Usuário Discord',
-            value: `<@${data.discordId}> (${data.username})`,
-            inline: false
-          },
-          {
-            name: '🆔 ID do Discord',
-            value: data.discordId,
-            inline: false
-          },
-          {
-            name: '📄 Certificado Nº',
-            value: data.certificateNumber || 'N/A',
-            inline: false
-          },
-          {
-            name: '📅 Data de Emissão',
-            value: data.emissionDate || 'N/A',
-            inline: false
-          },
-          {
-            name: '🎮 Nome do Personagem',
-            value: userData.characterName || 'Não informado',
-            inline: false
-          },
-          {
-            name: '🌐 ID no Servidor',
-            value: userData.serverId || 'Não informado',
-            inline: false
-          },
-          {
-            name: '👨 Nome Real',
-            value: userData.realName || 'Não informado',
-            inline: false
-          },
-          {
-            name: '🎂 Data de Nascimento',
-            value: userData.birthDate ? new Date(userData.birthDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informado',
-            inline: false
-          },
-          {
-            name: '🖥️ Set de Servidor',
-            value: userData.serverSet || 'Não informado',
-            inline: false
-          },
-          {
-            name: '📺 Link de Stream',
-            value: userData.streamLink || 'Não informado',
-            inline: false
-          },
-          {
-            name: '⏰ Horário de Login',
-            value: userData.loginTime || 'Não informado',
-            inline: false
-          },
-          {
-            name: '📊 Estatísticas',
-            value: `🔐 Logins: **${data.totalLogins || 0}**\n⛔ Banimentos: **${data.totalBans || 0}**\n✨ Redenção: **${data.totalRedemptions > 0 ? 'Sim' : 'Não'}**`,
-            inline: false
-          },
-          {
-            name: '📅 Dias desde a criação da conta',
-            value: data.daysSinceCreation !== undefined && data.daysSinceCreation !== null 
-              ? `**${data.daysSinceCreation}** dias ${data.daysSinceCreation < 30 ? '⚠️' : '✅'}`
-              : 'Não informado',
-            inline: false
-          }
-        ],
+        description: embedDescription,
         image: {
           url: 'attachment://certificado.png'
         },
