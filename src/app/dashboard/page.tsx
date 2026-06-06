@@ -729,7 +729,7 @@ export default function Dashboard() {
             <div className="bg-card rounded-lg shadow-md p-8 border border-border">
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Formulário de Imigração CXP XP
+                  Formulário de Imigração CPX XP
                 </h2>
                 <p className="text-muted-foreground">
                   Preencha suas informações para solicitar a imigração para o servidor
