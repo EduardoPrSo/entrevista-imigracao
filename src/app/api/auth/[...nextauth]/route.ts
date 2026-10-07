@@ -10,6 +10,8 @@ export const authOptions = {
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      // Discord envia `iss` no callback (RFC 9207); o openid-client exige o issuer configurado
+      issuer: 'https://discord.com',
       authorization: {
         params: {
           scope: scopes,
